@@ -167,8 +167,15 @@ def run_golomb_decompress(path):
 
 
 def run_lzw(path):
-    with open(path, 'r', encoding='utf-8') as f:
-        data = f.read()
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            data = f.read()
+    except UnicodeDecodeError:
+        with open(path, 'r', encoding='utf-8', errors='replace') as f:
+            data = f.read()
+    if not data:
+        messagebox.showwarning("Empty file", "Selected file is empty; nothing to compress.")
+        return {"output": "n/a", "percent": None, "ratio": None}
     compressed = lzw_compress(data)
     output_path = os.path.join(os.path.dirname(path), "lzw_output.json")
     with open(output_path, 'w', encoding='utf-8') as f:
@@ -185,6 +192,8 @@ def run_lzw_decompress(path):
     with open(path, 'r', encoding='utf-8') as f:
         payload = json.load(f)
     compressed = payload.get("compressed", [])
+    if not isinstance(compressed, list):
+        raise ValueError("Invalid LZW file: 'compressed' field must be a list")
     decompressed = lzw_decompress(compressed.copy())
     output_path = os.path.join(os.path.dirname(path), "lzw_decompressed.txt")
     with open(output_path, 'w', encoding='utf-8') as f:
@@ -290,8 +299,8 @@ stats_var = tk.StringVar(value="Mode: Lossless | Algo: RLE | Time: --\nOutput: -
 header = ttk.Label(root, text="Data Compression Studio", font=("Segoe UI", 14, "bold"))
 header.pack(pady=(12, 6))
 
-sub = ttk.Label(root, text="Choose mode, algorithm, file, then compress or decompress.", wraplength=560, justify="center")
-sub.pack(pady=(0, 10))
+# sub = ttk.Label(root, text="Choose mode, algorithm, file, then compress or decompress.", wraplength=560, justify="center")
+# sub.pack(pady=(0, 10))
 
 container = ttk.Frame(root, padding=10)
 container.pack(fill="both", expand=True)
