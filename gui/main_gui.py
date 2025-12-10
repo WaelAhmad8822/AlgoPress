@@ -46,7 +46,7 @@ def compression_ratio(original_size, compressed_size):
     return round(original_size / compressed_size, 2)
 
 
-def show_result_window(title, output_path, percent=None, ratio=None, decompress_fn=None):
+def show_result_window(title, output_path, percent=None, ratio=None, mse=None, decompress_fn=None):
     result_window = tk.Toplevel(root)
     result_window.title(title)
     result_window.geometry("440x240")
@@ -58,6 +58,8 @@ def show_result_window(title, output_path, percent=None, ratio=None, decompress_
         ttk.Label(result_window, text=f"Compression: {percent}%").pack(pady=2)
     if ratio is not None:
         ttk.Label(result_window, text=f"Ratio: {ratio}:1").pack(pady=2)
+    if mse is not None:
+        ttk.Label(result_window, text=f"MSE: {mse:.2f}").pack(pady=2)
 
     def open_file():
         try:
@@ -193,12 +195,12 @@ def run_lzw_decompress(path):
 
 def run_quantization(image_path):
     output_path = os.path.join(os.path.dirname(image_path), "compressed_image.npz")
-    percent = quantize_image(image_path, levels=16, save_path=output_path)
+    percent, mse = quantize_image(image_path, levels=16, save_path=output_path)
     original_size = os.path.getsize(image_path)
     compressed_size = os.path.getsize(output_path)
     ratio = compression_ratio(original_size, compressed_size)
-    show_result_window("Quantization Result", output_path, percent, ratio, decompress_fn=lambda: run_quantization_decompress(output_path))
-    return {"output": output_path, "percent": percent, "ratio": ratio}
+    show_result_window("Quantization Result", output_path, percent, ratio, mse, decompress_fn=lambda: run_quantization_decompress(output_path))
+    return {"output": output_path, "percent": percent, "ratio": ratio, "mse": mse}
 
 
 def run_quantization_decompress(image_path):
@@ -261,11 +263,13 @@ def perform(action):
     output_path = result.get("output") if result else "n/a"
     percent = result.get("percent")
     ratio = result.get("ratio")
+    mse = result.get("mse")
 
     status_var.set(f"{algo.title()} {action} finished in {elapsed:.3f}s")
     percent_text = f"Compression: {percent}%" if percent is not None else "Compression: n/a"
     ratio_text = f"Ratio: {ratio}:1" if ratio is not None else "Ratio: n/a"
-    stats_var.set(f"Mode: {mode.title()} | Algo: {algo.title()} | Time: {elapsed:.3f}s\nOutput: {output_path}\n{percent_text} | {ratio_text}")
+    mse_text = f"MSE: {mse:.2f}" if mse is not None else "MSE: n/a"
+    stats_var.set(f"Mode: {mode.title()} | Algo: {algo.title()} | Time: {elapsed:.3f}s\nOutput: {output_path}\n{percent_text} | {ratio_text} | {mse_text}")
 
 
 root = tk.Tk()
